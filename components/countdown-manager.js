@@ -54,31 +54,37 @@ AFRAME.registerComponent('countdown-manager', {
 
   fireCannonBall: function (ball, cannon) {
     ball.setAttribute('visible', 'true');
-    
-    // Set ball position to the cannon tip dynamically
+
+    // Get cannon position
     const cannonPos = cannon.object3D.position;
-    const cannonRot = cannon.object3D.rotation;
-    
-    // Start ball from the cannon tip with slight offset
+
+    // Start position of the cannonball (from the cannon tip)
     const startPos = {
       x: cannonPos.x,
-      y: cannonPos.y + 0.2,
-      z: cannonPos.z + 0.9, // Adjust offset based on cannon orientation
+      y: cannonPos.y + 0.6, // Offset to simulate being at the cannon tip
+      z: cannonPos.z + 0.9, // Adjust based on cannon orientation
     };
 
     ball.setAttribute('position', startPos);
 
     let time = 0;
+    const g = 9.8; // Gravity
+    const initialSpeed = 5; // Initial speed of the cannonball (adjust as needed)
+    const angle = Math.PI / 6; // 45 degrees in radians
 
-    // Simulate projectile motion (parabolic arc)
+    // Calculate initial velocity components
+    const vY = initialSpeed * Math.sin(angle);
+    const vZ = initialSpeed * Math.cos(angle);
+
     const interval = setInterval(() => {
       time += 0.05;
 
-      // Calculate projectile position based on time
-      let newX = startPos.x; // No x-axis movement
-      let newY = startPos.y + (0.5 - 0.5 * 9.8 * time * time); // Gravity effect on Y
-      let newZ = startPos.z + 0.1 * time * 30; // Forward motion (adjust multiplier for speed)
+      // Calculate new position using projectile motion equations
+      const newX = startPos.x; // No horizontal motion in X
+      const newY = startPos.y + vY * time - 0.5 * g * time * time; // Vertical motion with gravity
+      const newZ = startPos.z + vZ * time; // Forward motion in Z
 
+      // Update cannonball position
       ball.setAttribute('position', { x: newX, y: newY, z: newZ });
 
       // Collision detection (ground plane at y <= 0)
@@ -88,5 +94,5 @@ AFRAME.registerComponent('countdown-manager', {
         ball.setAttribute('position', { x: 0, y: 0.2, z: 0 }); // Reset position
       }
     }, 50);
-  },
+  }
 });
