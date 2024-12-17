@@ -63,7 +63,7 @@ AFRAME.registerComponent('countdown-manager', {
     const startPos = {
       x: cannonPos.x,
       y: cannonPos.y + 0.2,
-      z: cannonPos.z - 0.5, // Adjust offset based on cannon orientation
+      z: cannonPos.z + 0.9, // Adjust offset based on cannon orientation
     };
 
     ball.setAttribute('position', startPos);
@@ -77,7 +77,7 @@ AFRAME.registerComponent('countdown-manager', {
       // Calculate projectile position based on time
       let newX = startPos.x; // No x-axis movement
       let newY = startPos.y + (0.5 - 0.5 * 9.8 * time * time); // Gravity effect on Y
-      let newZ = startPos.z - 0.1 * time * 20; // Forward motion (adjust multiplier for speed)
+      let newZ = startPos.z + 0.1 * time * 30; // Forward motion (adjust multiplier for speed)
 
       ball.setAttribute('position', { x: newX, y: newY, z: newZ });
 
