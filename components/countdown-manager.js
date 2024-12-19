@@ -42,7 +42,10 @@ AFRAME.registerComponent('countdown-manager', {
 
       if (this.countdown < 0) {
         clearInterval(timer);
-        this.fireCannonBall(this.isGreenTurn ? this.greenBall : this.blueBall, this.isGreenTurn ? this.greenCannon : this.blueCannon);
+        this.fireCannonBall(
+          this.isGreenTurn ? this.greenBall : this.blueBall,
+          this.isGreenTurn ? this.greenCannon : this.blueCannon
+        );
 
         setTimeout(() => {
           this.isGreenTurn = !this.isGreenTurn; // Switch turns
@@ -54,39 +57,67 @@ AFRAME.registerComponent('countdown-manager', {
 
   fireCannonBall: function (ball, cannon) {
     ball.setAttribute('visible', 'true');
-    
-    // Set ball position to the cannon tip dynamically
+
+    // Get references to hit planes
+    const greenHitPlane = document.querySelector('#greenHitPlane');
+    const blueHitPlane = document.querySelector('#blueHitPlane');
+
+    // Get cannon position
     const cannonPos = cannon.object3D.position;
-    const cannonRot = cannon.object3D.rotation;
-    
-    // Start ball from the cannon tip with slight offset
+
+    // Start position of the cannonball (from the cannon tip)
     const startPos = {
       x: cannonPos.x,
-      y: cannonPos.y + 0.2,
-      z: cannonPos.z + 0.9, // Adjust offset based on cannon orientation
+      y: cannonPos.y + 0.6,
+      z: cannonPos.z + 0.9,
     };
 
     ball.setAttribute('position', startPos);
 
     let time = 0;
+    const g = 9.8; // Gravity
+    const initialSpeed = 5;
+    const angle = Math.PI / 6;
 
-    // Simulate projectile motion (parabolic arc)
+    const vY = initialSpeed * Math.sin(angle);
+    const vZ = initialSpeed * Math.cos(angle);
+
     const interval = setInterval(() => {
       time += 0.05;
 
-      // Calculate projectile position based on time
-      let newX = startPos.x; // No x-axis movement
-      let newY = startPos.y + (0.5 - 0.5 * 9.8 * time * time); // Gravity effect on Y
-      let newZ = startPos.z + 0.1 * time * 30; // Forward motion (adjust multiplier for speed)
+      const newX = startPos.x;
+      const newY = startPos.y + vY * time - 0.5 * g * time * time;
+      const newZ = startPos.z + vZ * time;
 
       ball.setAttribute('position', { x: newX, y: newY, z: newZ });
 
-      // Collision detection (ground plane at y <= 0)
-      if (newY <= 0 || newZ < -5) {
+      // Collision detection using bounding box
+      if (this.checkCollisionWithBoundingBox(ball, greenHitPlane)) {
+        this.showHitbox(greenHitPlane);
+      }
+
+      if (this.checkCollisionWithBoundingBox(ball, blueHitPlane)) {
+        this.showHitbox(blueHitPlane);
+      }
+
+      if (newY <= -0.25 || newZ < -5) {
         clearInterval(interval);
         ball.setAttribute('visible', 'false');
         ball.setAttribute('position', { x: 0, y: 0.2, z: 0 }); // Reset position
       }
     }, 50);
+  },
+
+  checkCollisionWithBoundingBox: function (ball, plane) {
+    const ballBox = new THREE.Box3().setFromObject(ball.object3D);
+    const planeBox = new THREE.Box3().setFromObject(plane.object3D);
+    return ballBox.intersectsBox(planeBox);
+  },
+
+  showHitbox: function (hitPlane) {
+    hitPlane.setAttribute('visible', 'true');
+    setTimeout(() => {
+      hitPlane.setAttribute('visible', 'false');
+    }, 1000); // Hide after 1 second
   },
 });
