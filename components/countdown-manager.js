@@ -8,6 +8,9 @@ AFRAME.registerComponent('countdown-manager', {
     this.greenHealth = 3;
     this.blueHealth = 3;
 
+    // Load sounds
+    this.loadSounds();
+
     // Get references to text elements, cannonballs, and cannons
     this.greenText = document.querySelector('#greenTimer');
     this.blueText = document.querySelector('#blueTimer');
@@ -29,6 +32,15 @@ AFRAME.registerComponent('countdown-manager', {
         this.startCountdown();
       }
     });
+  },
+
+  loadSounds: function () {
+    this.fireSound = new Audio('assets/cannon_fire.mp3');
+    this.warningSound = new Audio('assets/countdown_warning.mp3');
+    this.backgroundMusic = new Audio('assets/background_music.mp3');
+    this.backgroundMusic.loop = true;
+    this.backgroundMusic.volume = 1;
+    this.backgroundMusic.play();
   },
 
   updateHealthDisplays: function () {
@@ -55,6 +67,11 @@ AFRAME.registerComponent('countdown-manager', {
         this.greenText.setAttribute('value', `Health: ${this.greenHealth}`);
       }
 
+      // Play warning sound at countdown 5
+      if (this.countdown === 5) {
+        this.warningSound.play();
+      }
+
       this.countdown--;
 
       if (this.countdown < 0) {
@@ -75,6 +92,7 @@ AFRAME.registerComponent('countdown-manager', {
 
   fireCannonBall: function (ball, cannon, target) {
     ball.setAttribute('visible', 'true');
+    this.fireSound.play();
 
     const targetPlane = document.querySelector(`#${target}HitPlane`);
 
@@ -115,7 +133,8 @@ AFRAME.registerComponent('countdown-manager', {
         return;
       }
 
-      if (newY <= -0.25 || newZ < -5) {
+      // Let the ball fall further before disappearing
+      if (newY <= -5 || newZ < -15) {
         clearInterval(interval);
         ball.setAttribute('visible', 'false');
       }
