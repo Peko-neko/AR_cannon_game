@@ -32,6 +32,8 @@ AFRAME.registerComponent('countdown-manager', {
         this.startCountdown();
       }
     });
+
+    this.setupSoundControls();
   },
 
   loadSounds: function () {
@@ -41,6 +43,26 @@ AFRAME.registerComponent('countdown-manager', {
     this.backgroundMusic.loop = true;
     this.backgroundMusic.volume = 1;
     this.backgroundMusic.play();
+  },
+
+  setupSoundControls: function () {
+    const playButton = document.getElementById('playMusic');
+    const stopButton = document.getElementById('stopMusic');
+    const volumeSlider = document.getElementById('volumeControl');
+
+    playButton.addEventListener('click', () => {
+      this.backgroundMusic.play();
+    });
+
+    stopButton.addEventListener('click', () => {
+      this.backgroundMusic.pause();
+      this.backgroundMusic.currentTime = 0; // Reset to the beginning
+    });
+
+    volumeSlider.addEventListener('input', (event) => {
+      const volume = event.target.value;
+      this.backgroundMusic.volume = volume;
+    });
   },
 
   updateHealthDisplays: function () {
