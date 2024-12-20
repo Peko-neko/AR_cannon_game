@@ -1,12 +1,12 @@
-/**
- * @component countdown-manager
- * @description Manages turn-based countdown system between two cannons and firing mechanism.
- */
 AFRAME.registerComponent('countdown-manager', {
   init: function () {
     this.isGreenTurn = true; // Start with green cannon
     this.countdown = 5;
     this.isRunning = false;
+
+    // Initialize health for both cannons
+    this.greenHealth = 3;
+    this.blueHealth = 3;
 
     // Get references to text elements, cannonballs, and cannons
     this.greenText = document.querySelector('#greenTimer');
@@ -16,6 +16,13 @@ AFRAME.registerComponent('countdown-manager', {
     this.greenCannon = document.querySelector('#greenCannon');
     this.blueCannon = document.querySelector('#blueCannon');
 
+    // Get hit planes
+    this.greenHitPlane = document.querySelector('#greenHitPlane');
+    this.blueHitPlane = document.querySelector('#blueHitPlane');
+
+    // Update health displays
+    this.updateHealthDisplays();
+
     // Start countdown when a marker is found
     this.el.sceneEl.addEventListener('markerFound', () => {
       if (!this.isRunning) {
@@ -24,18 +31,28 @@ AFRAME.registerComponent('countdown-manager', {
     });
   },
 
+  updateHealthDisplays: function () {
+    this.greenText.setAttribute('value', `Health: ${this.greenHealth}`);
+    this.blueText.setAttribute('value', `Health: ${this.blueHealth}`);
+  },
+
   startCountdown: function () {
     this.isRunning = true;
     this.countdown = 5;
 
     const timer = setInterval(() => {
+      if (this.greenHealth <= 0 || this.blueHealth <= 0) {
+        clearInterval(timer);
+        return;
+      }
+
       // Update the countdown for the active cannon
       if (this.isGreenTurn) {
-        this.greenText.setAttribute('value', this.countdown.toString());
-        this.blueText.setAttribute('value', '');
+        this.greenText.setAttribute('value', `Health: ${this.greenHealth}\n${this.countdown}`);
+        this.blueText.setAttribute('value', `Health: ${this.blueHealth}`);
       } else {
-        this.blueText.setAttribute('value', this.countdown.toString());
-        this.greenText.setAttribute('value', '');
+        this.blueText.setAttribute('value', `Health: ${this.blueHealth}\n${this.countdown}`);
+        this.greenText.setAttribute('value', `Health: ${this.greenHealth}`);
       }
 
       this.countdown--;
@@ -44,7 +61,8 @@ AFRAME.registerComponent('countdown-manager', {
         clearInterval(timer);
         this.fireCannonBall(
           this.isGreenTurn ? this.greenBall : this.blueBall,
-          this.isGreenTurn ? this.greenCannon : this.blueCannon
+          this.isGreenTurn ? this.greenCannon : this.blueCannon,
+          this.isGreenTurn ? 'blue' : 'green'
         );
 
         setTimeout(() => {
@@ -55,12 +73,10 @@ AFRAME.registerComponent('countdown-manager', {
     }, 1000);
   },
 
-  fireCannonBall: function (ball, cannon) {
+  fireCannonBall: function (ball, cannon, target) {
     ball.setAttribute('visible', 'true');
 
-    // Get references to hit planes
-    const greenHitPlane = document.querySelector('#greenHitPlane');
-    const blueHitPlane = document.querySelector('#blueHitPlane');
+    const targetPlane = document.querySelector(`#${target}HitPlane`);
 
     // Get cannon position
     const cannonPos = cannon.object3D.position;
@@ -91,27 +107,37 @@ AFRAME.registerComponent('countdown-manager', {
 
       ball.setAttribute('position', { x: newX, y: newY, z: newZ });
 
-      // Collision detection using bounding box
-      if (this.checkCollisionWithBoundingBox(ball, greenHitPlane)) {
-        this.showHitbox(greenHitPlane);
-      }
-
-      if (this.checkCollisionWithBoundingBox(ball, blueHitPlane)) {
-        this.showHitbox(blueHitPlane);
+      if (this.checkCollisionWithBoundingBox(ball, targetPlane)) {
+        this.handleHit(target);
+        this.showHitbox(targetPlane);
+        clearInterval(interval);
+        ball.setAttribute('visible', 'false');
+        return;
       }
 
       if (newY <= -0.25 || newZ < -5) {
         clearInterval(interval);
         ball.setAttribute('visible', 'false');
-        ball.setAttribute('position', { x: 0, y: 0.2, z: 0 }); // Reset position
       }
     }, 50);
   },
 
-  checkCollisionWithBoundingBox: function (ball, plane) {
-    const ballBox = new THREE.Box3().setFromObject(ball.object3D);
-    const planeBox = new THREE.Box3().setFromObject(plane.object3D);
-    return ballBox.intersectsBox(planeBox);
+  handleHit: function (target) {
+    if (target === 'green') {
+      this.greenHealth--;
+    } else {
+      this.blueHealth--;
+    }
+
+    if (this.greenHealth <= 0) {
+      this.greenText.setAttribute('value', 'You Lost!');
+      this.blueText.setAttribute('value', 'You Won!');
+    } else if (this.blueHealth <= 0) {
+      this.greenText.setAttribute('value', 'You Won!');
+      this.blueText.setAttribute('value', 'You Lost!');
+    } else {
+      this.updateHealthDisplays();
+    }
   },
 
   showHitbox: function (hitPlane) {
@@ -120,4 +146,10 @@ AFRAME.registerComponent('countdown-manager', {
       hitPlane.setAttribute('visible', 'false');
     }, 1000); // Hide after 1 second
   },
+
+  checkCollisionWithBoundingBox: function (ball, plane) {
+    const ballBox = new THREE.Box3().setFromObject(ball.object3D);
+    const planeBox = new THREE.Box3().setFromObject(plane.object3D);
+    return ballBox.intersectsBox(planeBox);
+  }
 });
